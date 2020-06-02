@@ -13,6 +13,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.ComponentModel; // CancelEventArgs
 using ZOOM_SDK_DOTNET_WRAP;
+using System.Windows.Controls.Primitives;
+using System.Windows.Interop;
 
 namespace zoom_sdk_demo
 {
@@ -26,6 +28,24 @@ namespace zoom_sdk_demo
             InitializeComponent();
         }
 
+        public static RECT BoundsRelativeTo(FrameworkElement element, Visual relativeTo)
+        {
+            var rect = element.TransformToVisual(relativeTo)
+                     .TransformBounds(LayoutInformation.GetLayoutSlot(element));
+            return new RECT { Bottom = (int)rect.Bottom, Left = (int)rect.Left, Right = (int)rect.Right, Top = (int)rect.Top };
+        }
+
+        private static IntPtr GetHandle(Window window)
+        {
+            var windowInteropHelper = new WindowInteropHelper(window);
+            return windowInteropHelper.Handle;
+        }
+
+        private RECT GetBounds(Window mainWindow)
+        {
+            return BoundsRelativeTo(mainWindow.Content as FrameworkElement, mainWindow);
+        }
+
         //ZOOM_SDK_DOTNET_WRAP.onMeetingStatusChanged
         public void onMeetingStatusChanged(MeetingStatus status, int iResult)
         {
@@ -35,6 +55,37 @@ namespace zoom_sdk_demo
                 case ZOOM_SDK_DOTNET_WRAP.MeetingStatus.MEETING_STATUS_FAILED:
                     {
                         Show();
+                    }
+                    break;
+                case MeetingStatus.MEETING_STATUS_INMEETING:
+                    try
+                    {
+                        var window = new HostWindow();
+                        window.Show();
+                        IntPtr handle = GetHandle(window);
+                        RECT bounds = new RECT { Bottom = 100, Left = 10, Right = 150, Top = 10 };
+                        var ui = CZoomSDKeDotNetWrap.Instance.GetCustomizedUIMgrWrap();
+                        var container = ui.CreateVideoContainer(handle, bounds);
+                        var video = container.CreateVideoElement(VideoRenderElementType.VideoRenderElement_ACTIVE);
+                        var activeVideo = video as IActiveVideoRenderElementDotNetWrap;
+
+                        Console.WriteLine("Showing container");
+                        var error = container.Show();
+                        if (error != SDKError.SDKERR_SUCCESS)
+                        {
+                            Console.WriteLine("Error at container.Show: " + error);
+                            break;
+                        }
+                        Console.WriteLine("Starting activeVideo");
+                        error = activeVideo.Start();
+                        if (error != SDKError.SDKERR_SUCCESS)
+                        {
+                            Console.WriteLine("Error at video.Start: " + error);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
                     }
                     break;
                 default://todo
