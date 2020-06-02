@@ -66,6 +66,8 @@ namespace zoom_sdk_demo
                         RECT bounds = new RECT { Bottom = 100, Left = 10, Right = 150, Top = 10 };
                         var ui = CZoomSDKeDotNetWrap.Instance.GetCustomizedUIMgrWrap();
                         var container = ui.CreateVideoContainer(handle, bounds);
+
+                        // during my tests, 'video' is always null here
                         var video = container.CreateVideoElement(VideoRenderElementType.VideoRenderElement_ACTIVE);
                         var activeVideo = video as IActiveVideoRenderElementDotNetWrap;
 
